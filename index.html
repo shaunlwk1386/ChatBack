@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeetingScribe</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #0e0e10;
+    --surface: #18181b;
+    --surface-hover: #1f1f23;
+    --surface-alt: #232328;
+    --border: #2e2e35;
+    --border-focus: #52525b;
+    --text: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --accent: #ef4444;
+    --accent-glow: rgba(239,68,68,0.15);
+    --green: #22c55e;
+    --green-soft: rgba(34,197,94,0.1);
+    --blue: #3b82f6;
+    --blue-soft: rgba(59,130,246,0.1);
+    --amber: #f59e0b;
+    --font-sans: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'DM Mono', 'SF Mono', monospace;
+    --radius: 14px;
+    --radius-sm: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: var(--font-sans); background: var(--bg); color: var(--text);
+    line-height: 1.6; -webkit-font-smoothing: antialiased; min-height: 100vh;
+}
+body::before {
+    content:''; position:fixed; inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:0;
+}
+.app { max-width:720px; margin:0 auto; padding:24px 20px; position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+
+/* NAV */
+.nav { display:flex; align-items:center; justify-content:space-between; padding:8px 0 28px; }
+.logo { display:flex; align-items:center; gap:10px; }
+.logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent-glow); animation:breathe 3s ease-in-out infinite; }
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+.logo-text { font-size:17px; font-weight:700; letter-spacing:-0.03em; }
+.nav-tabs { display:flex; gap:4px; }
+.nav-tab { font-family:var(--font-sans); font-size:13px; font-weight:600; padding:7px 16px; border-radius:100px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; transition:all .15s; }
+.nav-tab:hover { color:var(--text-secondary); border-color:var(--border-focus); }
+.nav-tab.active { background:var(--surface-alt); color:var(--text); border-color:var(--border-focus); }
+.count-badge { font-family:var(--font-mono); font-size:11px; background:var(--surface-alt); color:var(--text-muted); padding:2px 8px; border-radius:100px; margin-left:6px; }
+
+/* PAGES */
+.page { display:none; flex:1; flex-direction:column; }
+.page.active { display:flex; }
+
+/* CARDS */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px; margin-bottom:18px; animation:fadeUp .35s ease-out both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.step-label { font-family:var(--font-mono); font-size:11px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; }
+.card h2 { font-size:20px; font-weight:700; letter-spacing:-0.02em; margin-bottom:5px; }
+.card-desc { font-size:14px; color:var(--text-secondary); margin-bottom:24px; }
+
+/* RECORDER */
+.recorder-box { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:28px; text-align:center; transition:all .3s; }
+.recorder-box.recording { border-color:var(--accent); box-shadow:0 0 40px var(--accent-glow),inset 0 0 40px var(--accent-glow); }
+.wave-container { height:56px; display:flex; align-items:center; justify-content:center; gap:3px; margin-bottom:14px; }
+.wave-bar { width:3px; height:8px; background:var(--text-muted); border-radius:3px; transition:height .1s; }
+.recorder-box.recording .wave-bar { background:var(--accent); animation:wave .6s ease-in-out infinite alternate; }
+@keyframes wave { to{height:44px} }
+.wave-bar:nth-child(1){animation-delay:0s}.wave-bar:nth-child(2){animation-delay:.05s}.wave-bar:nth-child(3){animation-delay:.1s}.wave-bar:nth-child(4){animation-delay:.15s}.wave-bar:nth-child(5){animation-delay:.2s}.wave-bar:nth-child(6){animation-delay:.25s}.wave-bar:nth-child(7){animation-delay:.3s}.wave-bar:nth-child(8){animation-delay:.35s}.wave-bar:nth-child(9){animation-delay:.4s}.wave-bar:nth-child(10){animation-delay:.45s}.wave-bar:nth-child(11){animation-delay:.5s}.wave-bar:nth-child(12){animation-delay:.45s}.wave-bar:nth-child(13){animation-delay:.4s}.wave-bar:nth-child(14){animation-delay:.35s}.wave-bar:nth-child(15){animation-delay:.3s}.wave-bar:nth-child(16){animation-delay:.25s}
+.timer { font-family:var(--font-mono); font-size:30px; font-weight:500; color:var(--text-muted); letter-spacing:.06em; margin-bottom:6px; }
+.recorder-box.recording .timer { color:var(--accent); }
+.live-preview { font-size:13px; color:var(--text-secondary); font-style:italic; min-height:20px; max-width:500px; margin:0 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* BUTTONS */
+.controls { display:flex; align-items:center; gap:10px; margin-top:20px; }
+.btn { font-family:var(--font-sans); font-size:14px; font-weight:600; padding:11px 24px; border-radius:var(--radius-sm); border:none; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:8px; }
+.btn:active { transform:scale(.97); }
+.btn-primary { background:var(--text); color:var(--bg); }
+.btn-primary:hover { background:#e4e4e7; }
+.btn-danger { background:var(--accent); color:#fff; animation:pulse-ring 1.8s ease-in-out infinite; }
+.btn-danger:hover { background:#dc2626; }
+@keyframes pulse-ring { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)} 50%{box-shadow:0 0 0 10px rgba(239,68,68,0)} }
+.btn-ghost { background:transparent; color:var(--text-secondary); border:1px solid var(--border); padding:9px 18px; font-size:13px; }
+.btn-ghost:hover { background:var(--surface-hover); color:var(--text); border-color:var(--border-focus); }
+.btn-green { background:var(--green); color:#fff; }
+.btn-green:hover { background:#16a34a; }
+.btn-green:disabled { opacity:.4; cursor:not-allowed; }
+.btn-full { width:100%; justify-content:center; }
+
+/* PROCESSING */
+.spinner { display:flex; align-items:center; justify-content:center; gap:6px; margin:20px 0; }
+.spinner-dot { width:8px; height:8px; background:var(--text-muted); border-radius:50%; animation:bounce 1.2s ease-in-out infinite; }
+.spinner-dot:nth-child(2){animation-delay:.15s}.spinner-dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
+.proc-status { text-align:center; font-size:13px; font-family:var(--font-mono); color:var(--text-muted); }
+
+/* RESULTS */
+.results-meta { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.chip { font-size:11px; font-family:var(--font-mono); color:var(--text-muted); background:var(--bg); padding:4px 10px; border-radius:100px; border:1px solid var(--border); }
+.tabs { display:flex; gap:2px; background:var(--bg); padding:3px; border-radius:var(--radius-sm); margin-bottom:14px; }
+.tab { flex:1; font-family:var(--font-sans); font-size:13px; font-weight:600; padding:9px; border:none; background:transparent; cursor:pointer; border-radius:8px; color:var(--text-muted); transition:all .15s; text-align:center; }
+.tab.active { background:var(--surface-alt); color:var(--text); }
+.tab:hover:not(.active) { color:var(--text-secondary); }
+.content-box { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:22px; font-size:14px; line-height:1.75; white-space:pre-wrap; word-wrap:break-word; max-height:420px; overflow-y:auto; }
+.content-box::-webkit-scrollbar { width:5px; }
+.content-box::-webkit-scrollbar-track { background:transparent; }
+.content-box::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.actions-row { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+
+/* EMAIL LIST */
+.email-input-row { display:flex; gap:8px; margin-bottom:16px; }
+.input { flex:1; font-family:var(--font-sans); font-size:14px; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg); color:var(--text); outline:none; transition:border-color .15s; }
+.input:focus { border-color:var(--text-muted); }
+.input::placeholder { color:var(--text-muted); }
+.email-entries { display:flex; flex-direction:column; gap:6px; }
+.email-entry { display:flex; align-items:center; justify-content:space-between; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; animation:fadeUp .2s ease-out; }
+.email-entry-info { display:flex; flex-direction:column; }
+.email-entry-addr { font-size:14px; font-weight:500; }
+.email-entry-name { font-size:12px; color:var(--text-muted); }
+.email-entry-remove { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:18px; padding:4px 8px; border-radius:6px; transition:all .15s; }
+.email-entry-remove:hover { background:rgba(239,68,68,.1); color:var(--accent); }
+.empty-state { text-align:center; padding:32px 16px; color:var(--text-muted); font-size:14px; }
+.empty-state-icon { font-size:28px; margin-bottom:8px; opacity:.5; }
+
+/* SEND SECTION */
+.send-block { margin-top:20px; padding-top:20px; border-top:1px solid var(--border); }
+.send-block h3 { font-size:15px; font-weight:600; margin-bottom:4px; }
+.send-desc { font-size:13px; color:var(--text-muted); margin-bottom:14px; }
+.recipient-pills { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.pill { font-size:12px; font-family:var(--font-mono); background:var(--blue-soft); color:var(--blue); padding:5px 12px; border-radius:100px; border:1px solid rgba(59,130,246,.15); }
+.send-status { font-size:12px; text-align:center; margin-top:8px; min-height:18px; }
+.send-status.ok { color:var(--green); }
+.send-status.err { color:var(--accent); }
+
+/* WARN */
+.warn-banner { background:rgba(234,179,8,.08); border:1px solid rgba(234,179,8,.2); border-radius:var(--radius-sm); padding:12px 16px; font-size:13px; color:#eab308; margin-bottom:16px; display:none; }
+
+.footer { margin-top:auto; padding:24px 0 8px; text-align:center; font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
+.hidden { display:none !important; }
+
+@media(max-width:600px) {
+    .card{padding:20px} .controls{flex-direction:column}
+    .controls .btn,.actions-row .btn{width:100%;justify-content:center}
+    .actions-row{flex-direction:column} .email-input-row{flex-direction:column}
+    .nav-tabs{gap:2px} .nav-tab{padding:6px 12px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+    <nav class="nav">
+        <div class="logo"><div class="logo-dot"></div><span class="logo-text">MeetingScribe</span></div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" id="navRecord" onclick="showPage('record',this)">Record</button>
+            <button class="nav-tab" id="navTeam" onclick="showPage('team',this)">Team<span class="count-badge" id="teamCount">0</span></button>
+        </div>
+    </nav>
+
+    <!-- ===== RECORD PAGE ===== -->
+    <div class="page active" id="pageRecord">
+        <div class="warn-banner" id="warnBanner">Live transcription requires <strong>Chrome</strong> or <strong>Edge</strong>.</div>
+
+        <section class="card" id="recordCard">
+            <div class="step-label">01 — Record</div>
+            <h2>Start your meeting</h2>
+            <p class="card-desc">Hit record. Speech is transcribed live in the browser. When you stop, AI generates a structured report and sends it to your team list.</p>
+            <div class="recorder-box" id="recorderBox">
+                <div class="wave-container" id="waveContainer"></div>
+                <div class="timer" id="timer">00:00</div>
+                <div class="live-preview" id="livePreview">&nbsp;</div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" id="btnRecord" onclick="toggleRecording()"><span id="recIcon">&#9679;</span><span id="recLabel">Start Recording</span></button>
+                <button class="btn btn-ghost" id="btnPaste" onclick="pasteTranscript()">Paste transcript</button>
+            </div>
+        </section>
+
+        <section class="card hidden" id="processingCard">
+            <div class="step-label">02 — Processing</div>
+            <h2>Generating your report...</h2>
+            <div class="spinner"><div class="spinner-dot"></div><div class="spinner-dot"></div><div class="spinner-dot"></div></div>
+            <p class="proc-status" id="procStatus">Analysing transcript...</p>
+        </section>
+
+        <section class="card hidden" id="resultsCard">
+            <div class="step-label">03 — Report</div>
+            <h2>Meeting Report</h2>
+            <div class="results-meta"><span class="chip" id="metaDur"></span><span class="chip" id="metaWords"></span></div>
+            <div class="tabs">
+                <button class="tab active" id="tabNotes" onclick="showTab('notes')">Notes</button>
+                <button class="tab" id="tabTranscript" onclick="showTab('transcript')">Transcript</button>
+            </div>
+            <div id="notesPane"><div class="content-box" id="notesBox"></div></div>
+            <div id="transcriptPane" class="hidden"><div class="content-box" id="transcriptBox"></div></div>
+
+            <div class="send-block">
+                <h3>Send report to your team</h3>
+                <p class="send-desc" id="sendDesc"></p>
+                <div class="recipient-pills" id="recipientPills"></div>
+                <button class="btn btn-green btn-full" id="btnSend" onclick="sendReport()" disabled>Send Report</button>
+                <p class="send-status" id="sendStatus"></p>
+            </div>
+
+            <div class="actions-row">
+                <button class="btn btn-ghost" onclick="copyReport()">Copy Report</button>
+                <button class="btn btn-ghost" onclick="downloadReport()">Download .md</button>
+                <button class="btn btn-ghost" onclick="startOver()">New Recording</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== TEAM PAGE ===== -->
+    <div class="page" id="pageTeam">
+        <section class="card">
+            <div class="step-label">Team Distribution List</div>
+            <h2>Who gets the report?</h2>
+            <p class="card-desc">Add your team members below. Reports will be sent to everyone on this list. Your list is saved in this browser.</p>
+            <div class="email-input-row">
+                <input class="input" type="text" id="addName" placeholder="Name (optional)">
+                <input class="input" type="email" id="addEmail" placeholder="email@company.com" onkeydown="if(event.key==='Enter')addMember()">
+                <button class="btn btn-primary" onclick="addMember()">Add</button>
+            </div>
+            <div class="email-entries" id="emailEntries"></div>
+        </section>
+    </div>
+
+    <footer class="footer">MeetingScribe — browser-native, completely free</footer>
+</div>
+
+<script>
+// ======== STATE ========
+let isRecording=false, mediaRecorder=null, recognition=null;
+let fullTranscript='', interimText='', timerInt=null, startTs=null;
+let speechOK=false, team=[], resultNotes='', resultTranscript='';
+const LS='meetingscribe_team';
+
+// ======== INIT ========
+document.addEventListener('DOMContentLoaded', () => {
+    const wc=document.getElementById('waveContainer');
+    for(let i=0;i<16;i++){const b=document.createElement('div');b.className='wave-bar';wc.appendChild(b);}
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    speechOK=!!SR;
+    if(!speechOK) document.getElementById('warnBanner').style.display='block';
+    loadTeam();
+});
+
+// ======== PAGES ========
+function showPage(p,btn){
+    document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+    document.getElementById('page'+p.charAt(0).toUpperCase()+p.slice(1)).classList.add('active');
+    btn.classList.add('active');
+}
+
+// ======== TEAM ========
+function loadTeam(){try{const s=localStorage.getItem(LS);if(s)team=JSON.parse(s);}catch{}renderTeam();}
+function saveTeam(){try{localStorage.setItem(LS,JSON.stringify(team));}catch{}renderTeam();}
+
+function addMember(){
+    const ei=document.getElementById('addEmail'), ni=document.getElementById('addName');
+    const email=ei.value.trim().toLowerCase(), name=ni.value.trim();
+    if(!email||!email.includes('@')||!email.includes('.')){ei.style.borderColor='var(--accent)';setTimeout(()=>ei.style.borderColor='',1500);return;}
+    if(team.find(e=>e.email===email)){ei.style.borderColor='var(--amber)';setTimeout(()=>ei.style.borderColor='',1500);return;}
+    team.push({email,name:name||''});
+    saveTeam(); ei.value=''; ni.value=''; ni.focus();
+}
+
+function removeMember(email){team=team.filter(e=>e.email!==email);saveTeam();}
+
+function renderTeam(){
+    const c=document.getElementById('emailEntries'), badge=document.getElementById('teamCount');
+    badge.textContent=team.length;
+    if(!team.length){
+        c.innerHTML='<div class="empty-state"><div class="empty-state-icon">&#9993;</div><div>No team members yet.<br>Add emails above to get started.</div></div>';
+        updateSendUI(); return;
+    }
+    c.innerHTML=team.map(e=>`<div class="email-entry"><div class="email-entry-info"><span class="email-entry-addr">${esc(e.email)}</span>${e.name?`<span class="email-entry-name">${esc(e.name)}</span>`:''}</div><button class="email-entry-remove" onclick="removeMember('${esc(e.email)}')">&times;</button></div>`).join('');
+    updateSendUI();
+}
+
+function updateSendUI(){
+    const pills=document.getElementById('recipientPills'), btn=document.getElementById('btnSend'), desc=document.getElementById('sendDesc');
+    if(!team.length){pills.innerHTML='';desc.textContent='Add team emails in the Team tab first.';btn.disabled=true;return;}
+    desc.textContent=`Report will be sent to ${team.length} recipient${team.length>1?'s':''}:`;
+    pills.innerHTML=team.map(e=>`<span class="pill">${esc(e.name||e.email)}</span>`).join('');
+    btn.disabled=false;
+}
+
+// ======== RECORDING ========
+async function toggleRecording(){if(isRecording)stopRecording();else await startRecording();}
+
+async function startRecording(){
+    try{
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm';
+        mediaRecorder=new MediaRecorder(stream,{mimeType:mime});
+        mediaRecorder.ondataavailable=()=>{};
+        mediaRecorder.onstop=()=>stream.getTracks().forEach(t=>t.stop());
+        mediaRecorder.start(1000);
+
+        fullTranscript=''; interimText='';
+
+        if(speechOK){
+            const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+            recognition=new SR(); recognition.continuous=true; recognition.interimResults=true; recognition.lang='en-US';
+            recognition.onresult=(e)=>{
+                let interim='';
+                for(let i=e.resultIndex;i<e.results.length;i++){
+                    const t=e.results[i][0].transcript;
+                    if(e.results[i].isFinal)fullTranscript+=t+' '; else interim+=t;
+                }
+                interimText=interim;
+                const d=(fullTranscript+interim).trim();
+                document.getElementById('livePreview').textContent=d.length>80?'...'+d.slice(-80):d||'\u00a0';
+            };
+            recognition.onerror=(e)=>{if(e.error!=='no-speech')console.warn(e.error);};
+            recognition.onend=()=>{if(isRecording&&recognition)try{recognition.start();}catch{}};
+            recognition.start();
+        }
+
+        isRecording=true;
+        document.getElementById('recorderBox').classList.add('recording');
+        document.getElementById('btnRecord').className='btn btn-danger';
+        document.getElementById('recIcon').innerHTML='&#9632;';
+        document.getElementById('recLabel').textContent='Stop Recording';
+        document.getElementById('btnPaste').classList.add('hidden');
+        startTs=Date.now();
+        timerInt=setInterval(()=>{
+            const s=Math.floor((Date.now()-startTs)/1000);
+            document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+        },1000);
+    }catch{alert('Microphone access denied.');}
+}
+
+function stopRecording(){
+    isRecording=false; clearInterval(timerInt);
+    if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+    if(recognition){recognition.onend=null;recognition.stop();recognition=null;}
+    document.getElementById('recorderBox').classList.remove('recording');
+    document.getElementById('btnRecord').className='btn btn-primary';
+    document.getElementById('recIcon').innerHTML='&#9679;';
+    document.getElementById('recLabel').textContent='Start Recording';
+    fullTranscript+=interimText; fullTranscript=fullTranscript.trim();
+    if(!fullTranscript){alert('No speech detected.');document.getElementById('btnPaste').classList.remove('hidden');return;}
+    processTranscript(fullTranscript);
+}
+
+function pasteTranscript(){
+    const t=prompt('Paste your meeting transcript here:');
+    if(t&&t.trim())processTranscript(t.trim());
+}
+
+// ======== PROCESS ========
+async function processTranscript(transcript){
+    document.getElementById('recordCard').classList.add('hidden');
+    document.getElementById('processingCard').classList.remove('hidden');
+    document.getElementById('resultsCard').classList.add('hidden');
+    const status=document.getElementById('procStatus');
+    status.textContent='Sending transcript to AI for analysis...';
+    let notes='';
+    try{
+        const resp=await fetch('https://api.anthropic.com/v1/messages',{
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                model:'claude-sonnet-4-20250514', max_tokens:1000,
+                messages:[{role:'user',content:`You are a meeting notes assistant. Given the following transcript, produce a structured meeting report in EXACTLY this format (no other text):
+
+SUMMARY
+[3-5 sentence overview]
+
+ACTION ITEMS
+- [ ] Task — Owner (if mentioned)
+
+KEY DECISIONS
+- Decision made
+
+IMPORTANT POINTS
+- Key point or highlight from the discussion
+
+DISCUSSION NOTES
+- Topic: Points discussed
+
+Transcript:
+${transcript}`}]
+            })
+        });
+        if(!resp.ok)throw new Error('API '+resp.status);
+        const data=await resp.json();
+        notes=data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    }catch(err){
+        console.error(err);
+        status.textContent='AI unavailable — using basic extraction...';
+        notes=basicExtract(transcript);
+    }
+    resultNotes=notes; resultTranscript=transcript;
+    setTimeout(()=>showResults(transcript,notes),400);
+}
+
+function basicExtract(t){
+    const s=t.split(/[.!?]+/).map(x=>x.trim()).filter(x=>x.length>10);
+    const aKw=['need to','should','will','must','have to','going to','follow up','send','schedule','create'];
+    const dKw=['decided','agreed','approved','confirmed','go with','settled','moving forward'];
+    const acts=s.filter(x=>aKw.some(w=>x.toLowerCase().includes(w)));
+    const decs=s.filter(x=>dKw.some(w=>x.toLowerCase().includes(w)));
+    const rest=s.filter(x=>!acts.includes(x)&&!decs.includes(x));
+    let o=`SUMMARY\n${s.slice(0,3).join('. ')||'Meeting recorded.'}.\n\nACTION ITEMS\n`;
+    o+=acts.length?acts.slice(0,8).map(a=>`- [ ] ${a}`).join('\n'):'- None detected';
+    o+='\n\nKEY DECISIONS\n'+(decs.length?decs.slice(0,6).map(d=>`- ${d}`).join('\n'):'- None detected');
+    o+='\n\nIMPORTANT POINTS\n'+(rest.length?rest.slice(0,6).map(r=>`- ${r}`).join('\n'):'- See transcript');
+    o+='\n\nDISCUSSION NOTES\n'+(rest.length>6?rest.slice(6,14).map(r=>`- ${r}`).join('\n'):'- See transcript');
+    return o;
+}
+
+// ======== RESULTS ========
+function showResults(transcript,notes){
+    document.getElementById('processingCard').classList.add('hidden');
+    document.getElementById('resultsCard').classList.remove('hidden');
+    const words=transcript.split(/\s+/).length;
+    const dur=startTs?Math.floor((Date.now()-startTs)/1000):Math.ceil(words/2.5);
+    const m=Math.floor(dur/60),s=dur%60;
+    document.getElementById('metaDur').textContent=m>0?`${m}m ${s}s`:`${s}s`;
+    document.getElementById('metaWords').textContent=`${words} words`;
+    document.getElementById('notesBox').textContent=notes;
+    document.getElementById('transcriptBox').textContent=transcript;
+    updateSendUI();
+}
+
+function showTab(t){
+    document.getElementById('tabNotes').classList.toggle('active',t==='notes');
+    document.getElementById('tabTranscript').classList.toggle('active',t==='transcript');
+    document.getElementById('notesPane').classList.toggle('hidden',t!=='notes');
+    document.getElementById('transcriptPane').classList.toggle('hidden',t!=='transcript');
+}
+
+// ======== SEND ========
+function sendReport(){
+    if(!team.length)return;
+    const to=team.map(e=>e.email).join(',');
+    const today=new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'numeric'});
+    const subject=`Meeting Report — ${today}`;
+    const body=`${resultNotes}\n\n${'—'.repeat(30)}\nFULL TRANSCRIPT\n${resultTranscript}`;
+    const mailto=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const st=document.getElementById('sendStatus');
+    if(mailto.length>2000){
+        const short=`${resultNotes}\n\n[Transcript omitted due to length — use Copy/Download for the full version.]`;
+        window.open(`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(short)}`);
+        st.textContent='Opened (transcript trimmed for mail client length limit)';st.className='send-status ok';
+    }else{
+        window.location.href=mailto;
+        st.textContent='Mail client opened!';st.className='send-status ok';
+    }
+    setTimeout(()=>{st.textContent='';st.className='send-status';},5000);
+}
+
+// ======== ACTIONS ========
+function copyReport(){
+    const today=new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'numeric'});
+    navigator.clipboard.writeText(`Meeting Report — ${today}\n\n${resultNotes}\n\n${'—'.repeat(30)}\nFULL TRANSCRIPT\n${resultTranscript}`).then(()=>{
+        const b=event.target;const o=b.textContent;b.textContent='Copied!';setTimeout(()=>b.textContent=o,1500);
+    });
+}
+
+function downloadReport(){
+    const d=new Date().toISOString().split('T')[0];
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([`# Meeting Report — ${d}\n\n${resultNotes}\n\n---\n\n## Full Transcript\n\n${resultTranscript}`],{type:'text/markdown'}));
+    a.download=`meeting-report-${d}.md`;a.click();URL.revokeObjectURL(a.href);
+}
+
+function startOver(){
+    document.getElementById('resultsCard').classList.add('hidden');
+    document.getElementById('recordCard').classList.remove('hidden');
+    document.getElementById('btnPaste').classList.remove('hidden');
+    document.getElementById('timer').textContent='00:00';
+    document.getElementById('livePreview').innerHTML='&nbsp;';
+    fullTranscript='';startTs=null;
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+</script>
+</body>
+</html>
